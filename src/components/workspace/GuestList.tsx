@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { UserPlus, Search } from 'lucide-react';
+import { UserPlus, Search, Users } from 'lucide-react';
 import type { Guest, GuestStatus, GuestRelation } from '../../types';
 import { buildGroupColorMap } from '../../utils/groupColors';
 import GuestRow from './GuestRow';
@@ -30,6 +30,7 @@ export default function GuestList({ guests, editable, onAdd, onUpdate, onDelete 
   const [filterRelation, setFilterRelation] = useState<GuestRelation | ''>('');
   const [filterStatus, setFilterStatus] = useState<GuestStatus | ''>('');
   const [filterGroup, setFilterGroup] = useState<'linked' | 'unlinked' | ''>('');
+  const [sortMode, setSortMode] = useState<'alpha' | 'relation'>('alpha');
 
   const groupColorMap = useMemo(() => buildGroupColorMap(guests), [guests]);
 
@@ -101,14 +102,38 @@ export default function GuestList({ guests, editable, onAdd, onUpdate, onDelete 
     }
   }
 
-  const sorted = useMemo(
-    () => [...guests].sort((a, b) => {
+  const sorted = useMemo(() => {
+    const alpha = (a: Guest, b: Guest) => {
       const lastCmp = (a.lastName || '').localeCompare(b.lastName || '', 'he');
       if (lastCmp !== 0) return lastCmp;
       return (a.firstName || '').localeCompare(b.firstName || '', 'he');
-    }),
-    [guests]
-  );
+    };
+
+    if (sortMode === 'relation') {
+      // Compute the alphabetically-first key per group to order groups themselves
+      const groupKey = new Map<string, string>();
+      for (const g of guests) {
+        if (!g.relationGroupId) continue;
+        const key = (g.lastName || '') + (g.firstName || '');
+        const existing = groupKey.get(g.relationGroupId);
+        if (!existing || key.localeCompare(existing, 'he') < 0) {
+          groupKey.set(g.relationGroupId, key);
+        }
+      }
+      return [...guests].sort((a, b) => {
+        const aGrouped = !!a.relationGroupId;
+        const bGrouped = !!b.relationGroupId;
+        if (aGrouped !== bGrouped) return aGrouped ? -1 : 1; // ungrouped go last
+        if (!aGrouped) return alpha(a, b);
+        if (a.relationGroupId !== b.relationGroupId) {
+          return (groupKey.get(a.relationGroupId!) || '').localeCompare(groupKey.get(b.relationGroupId!) || '', 'he');
+        }
+        return alpha(a, b);
+      });
+    }
+
+    return [...guests].sort(alpha);
+  }, [guests, sortMode]);
 
   const filtered = sorted.filter((g) => {
     const name = `${g.firstName} ${g.lastName}`.toLowerCase();
@@ -158,6 +183,18 @@ export default function GuestList({ guests, editable, onAdd, onUpdate, onDelete 
             <option value="linked">יש קישור</option>
             <option value="unlinked">אין קישור</option>
           </select>
+          <button
+            onClick={() => setSortMode(m => m === 'alpha' ? 'relation' : 'alpha')}
+            title={sortMode === 'alpha' ? 'מיין לפי קשר' : 'מיין אלפביתי'}
+            className={`flex items-center gap-1.5 border rounded-lg px-3 py-2 text-sm transition-colors ${
+              sortMode === 'relation'
+                ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-medium'
+                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <Users size={14} />
+            {sortMode === 'relation' ? 'לפי קשר' : 'לפי קשר'}
+          </button>
         </div>
         {editable && (
           <button
