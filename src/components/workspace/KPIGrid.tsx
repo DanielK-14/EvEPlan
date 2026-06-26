@@ -17,10 +17,12 @@ export default function KPIGrid({ guests, config }: Props) {
   const total      = guests.length;
   const vegans     = guests.filter((g) => g.isVegan).length;
 
-  const rsvpYes   = guests.filter((g) => g.rsvpLikelihood === 'yes').length;
-  const rsvpMaybe = guests.filter((g) => g.rsvpLikelihood === 'maybe').length;
-  const rsvpNo    = guests.filter((g) => g.rsvpLikelihood === 'no').length;
+  const headcount = (g: { hasKids: boolean; kidsCount: number }) => 1 + (g.hasKids ? g.kidsCount : 0);
+  const rsvpYes   = guests.filter((g) => g.rsvpLikelihood === 'yes').reduce((s, g) => s + headcount(g), 0);
+  const rsvpMaybe = guests.filter((g) => g.rsvpLikelihood === 'maybe').reduce((s, g) => s + headcount(g), 0);
+  const rsvpNo    = guests.filter((g) => g.rsvpLikelihood === 'no').reduce((s, g) => s + headcount(g), 0);
   const rsvpMarked = rsvpYes + rsvpMaybe + rsvpNo;
+  const totalPeople = guests.reduce((s, g) => s + headcount(g), 0);
 
   const arrivedPct = total ? Math.round((arrived / total) * 100) : 0;
 
@@ -74,12 +76,12 @@ export default function KPIGrid({ guests, config }: Props) {
         {rsvpMarked > 0 && (
           <div className="mt-4">
             <div className="flex justify-between text-xs text-gray-400 mb-1">
-              <span>{rsvpMarked} מתוך {total} סומנו</span>
+              <span>{rsvpMarked} מתוך {totalPeople} אנשים סומנו</span>
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
-              <div className="bg-green-500 h-full transition-all" style={{ width: `${total ? (rsvpYes / total) * 100 : 0}%` }} />
-              <div className="bg-orange-400 h-full transition-all" style={{ width: `${total ? (rsvpMaybe / total) * 100 : 0}%` }} />
-              <div className="bg-red-400 h-full transition-all" style={{ width: `${total ? (rsvpNo / total) * 100 : 0}%` }} />
+              <div className="bg-green-500 h-full transition-all" style={{ width: `${totalPeople ? (rsvpYes / totalPeople) * 100 : 0}%` }} />
+              <div className="bg-orange-400 h-full transition-all" style={{ width: `${totalPeople ? (rsvpMaybe / totalPeople) * 100 : 0}%` }} />
+              <div className="bg-red-400 h-full transition-all" style={{ width: `${totalPeople ? (rsvpNo / totalPeople) * 100 : 0}%` }} />
             </div>
           </div>
         )}
