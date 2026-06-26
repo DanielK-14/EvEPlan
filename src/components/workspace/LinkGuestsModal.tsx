@@ -20,6 +20,7 @@ export default function LinkGuestsModal({ guest, allGuests, groupColorMap, onClo
   const [selected, setSelected] = useState<Set<string>>(initialSelected);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const [showOnlyConnected, setShowOnlyConnected] = useState(false);
 
   const others = useMemo(() =>
     allGuests
@@ -33,12 +34,13 @@ export default function LinkGuestsModal({ guest, allGuests, groupColorMap, onClo
   );
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return others;
-    const q = search.toLowerCase();
-    return others.filter(g =>
-      `${g.firstName} ${g.lastName}`.toLowerCase().includes(q)
-    );
-  }, [others, search]);
+    let list = showOnlyConnected ? others.filter(g => initialSelected.has(g.id)) : others;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(g => `${g.firstName} ${g.lastName}`.toLowerCase().includes(q));
+    }
+    return list;
+  }, [others, search, showOnlyConnected, initialSelected]);
 
   function toggle(id: string) {
     setSelected(prev => {
@@ -74,12 +76,18 @@ export default function LinkGuestsModal({ guest, allGuests, groupColorMap, onClo
         <div className="px-5 pt-3 pb-2 flex items-center justify-between gap-3">
           <p className="text-xs text-gray-400">סמן את האורחים הקשורים לאורח זה.</p>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setSelected(new Set(others.map(g => g.id)))}
-              className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors"
-            >
-              בחר הכל
-            </button>
+            {initialSelected.size > 0 && (
+              <button
+                onClick={() => setShowOnlyConnected(v => !v)}
+                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                  showOnlyConnected
+                    ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-medium'
+                    : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'
+                }`}
+              >
+                {showOnlyConnected ? 'הצג הכל' : `קשרים קיימים (${initialSelected.size})`}
+              </button>
+            )}
             {guest.relationGroupId && (
               <button
                 onClick={async () => { setSaving(true); await onSave([]); setSaving(false); onClose(); }}
