@@ -63,14 +63,17 @@ export default function KPIGrid({ guests, config }: Props) {
           <div className="px-4 first:pr-0 last:pl-0 text-center">
             <p className="text-2xl font-bold text-green-600">{rsvpYes}</p>
             <p className="text-xs text-gray-500 mt-0.5">יגיעו</p>
+            {totalPeople > 0 && <p className="text-xs text-green-500 font-medium mt-0.5">{Math.round((rsvpYes / totalPeople) * 100)}%</p>}
           </div>
           <div className="px-4 text-center">
             <p className="text-2xl font-bold text-orange-500">{rsvpMaybe}</p>
             <p className="text-xs text-gray-500 mt-0.5">אולי</p>
+            {totalPeople > 0 && <p className="text-xs text-orange-400 font-medium mt-0.5">{Math.round((rsvpMaybe / totalPeople) * 100)}%</p>}
           </div>
           <div className="px-4 first:pr-0 last:pl-0 text-center">
             <p className="text-2xl font-bold text-red-500">{rsvpNo}</p>
             <p className="text-xs text-gray-500 mt-0.5">לא יגיעו</p>
+            {totalPeople > 0 && <p className="text-xs text-red-400 font-medium mt-0.5">{Math.round((rsvpNo / totalPeople) * 100)}%</p>}
           </div>
         </div>
         {rsvpMarked > 0 && (
