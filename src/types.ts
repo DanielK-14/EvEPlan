@@ -14,6 +14,7 @@ export interface Guest {
   status: GuestStatus;
   giftAmount: number;
   relationGroupId?: string;
+  rsvpLikelihood?: 'yes' | 'maybe' | 'no';
 }
 
 export interface AttractionService {

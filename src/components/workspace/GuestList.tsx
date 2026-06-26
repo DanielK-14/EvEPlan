@@ -231,6 +231,7 @@ export default function GuestList({ guests, editable, onAdd, onUpdate, onDelete 
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">טלפון</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">שולחן</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">פרטים</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">סיכוי הגעה</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">סטטוס</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">מתנה</th>
                   {editable && <th className="px-4 py-3" />}

@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { X, Search } from 'lucide-react';
 import type { Guest, GuestRelation } from '../../types';
+import { formatPhone, isPhoneComplete } from '../../utils/phone';
 
 interface Props {
   onClose: () => void;
@@ -31,6 +32,7 @@ export default function AddGuestModal({ onClose, onAdd, existingLabels, allGuest
   const [linkedGuestIds, setLinkedGuestIds] = useState<Set<string>>(new Set());
   const [linkSearch, setLinkSearch] = useState('');
   const [duplicateError, setDuplicateError] = useState(false);
+  const [phoneError, setPhoneError] = useState<'duplicate' | 'format' | null>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
 
   const sortedGuests = useMemo(() =>
@@ -53,6 +55,7 @@ export default function AddGuestModal({ onClose, onAdd, existingLabels, allGuest
   function set<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === 'firstName' || key === 'lastName') setDuplicateError(false);
+    if (key === 'phoneNumber') setPhoneError(null);
   }
 
   function toggleLink(id: string) {
@@ -72,6 +75,11 @@ export default function AddGuestModal({ onClose, onAdd, existingLabels, allGuest
       g => g.firstName.trim().toLowerCase() === first && g.lastName.trim().toLowerCase() === last
     );
     if (isDuplicate) { setDuplicateError(true); return; }
+    if (!isPhoneComplete(form.phoneNumber)) { setPhoneError('format'); return; }
+    const phoneDigits = form.phoneNumber.replace(/\D/g, '');
+    if (phoneDigits && allGuests.some(g => g.phoneNumber.replace(/\D/g, '') === phoneDigits)) {
+      setPhoneError('duplicate'); return;
+    }
     setSaving(true);
     await onAdd({ ...form, kidsCount: form.hasKids ? form.kidsCount : 0 }, [...linkedGuestIds]);
     setSaving(false);
@@ -82,6 +90,7 @@ export default function AddGuestModal({ onClose, onAdd, existingLabels, allGuest
       setLinkedGuestIds(new Set());
       setLinkSearch('');
       setDuplicateError(false);
+      setPhoneError(null);
       setAddedCount((n) => n + 1);
       setTimeout(() => firstNameRef.current?.focus(), 50);
     }
@@ -154,10 +163,17 @@ export default function AddGuestModal({ onClose, onAdd, existingLabels, allGuest
             <input
               type="tel"
               value={form.phoneNumber}
-              onChange={(e) => set('phoneNumber', e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              onChange={(e) => set('phoneNumber', formatPhone(e.target.value))}
+              placeholder="050-1234-567"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${phoneError ? 'border-red-400 focus:ring-red-400' : 'focus:ring-indigo-400'}`}
               dir="ltr"
             />
+            {phoneError === 'duplicate' && (
+              <p className="text-xs text-red-500 mt-1">מספר טלפון זה כבר קיים ברשימה</p>
+            )}
+            {phoneError === 'format' && (
+              <p className="text-xs text-red-500 mt-1">פורמט לא תקין — נדרש XXX-XXXX-XXX</p>
+            )}
           </div>
 
           <div>

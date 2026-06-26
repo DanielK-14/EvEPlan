@@ -17,6 +17,11 @@ export default function KPIGrid({ guests, config }: Props) {
   const total      = guests.length;
   const vegans     = guests.filter((g) => g.isVegan).length;
 
+  const rsvpYes   = guests.filter((g) => g.rsvpLikelihood === 'yes').length;
+  const rsvpMaybe = guests.filter((g) => g.rsvpLikelihood === 'maybe').length;
+  const rsvpNo    = guests.filter((g) => g.rsvpLikelihood === 'no').length;
+  const rsvpMarked = rsvpYes + rsvpMaybe + rsvpNo;
+
   const arrivedPct = total ? Math.round((arrived / total) * 100) : 0;
 
   const isProfit = kpis.netProfitLoss >= 0;
@@ -47,6 +52,37 @@ export default function KPIGrid({ guests, config }: Props) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* RSVP prediction box */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <p className="text-xs text-gray-500 mb-3">תחזית הגעה</p>
+        <div className="grid grid-cols-3 divide-x divide-x-reverse divide-gray-100">
+          <div className="px-4 first:pr-0 last:pl-0 text-center">
+            <p className="text-2xl font-bold text-green-600">{rsvpYes}</p>
+            <p className="text-xs text-gray-500 mt-0.5">יגיעו</p>
+          </div>
+          <div className="px-4 text-center">
+            <p className="text-2xl font-bold text-orange-500">{rsvpMaybe}</p>
+            <p className="text-xs text-gray-500 mt-0.5">אולי</p>
+          </div>
+          <div className="px-4 first:pr-0 last:pl-0 text-center">
+            <p className="text-2xl font-bold text-red-500">{rsvpNo}</p>
+            <p className="text-xs text-gray-500 mt-0.5">לא יגיעו</p>
+          </div>
+        </div>
+        {rsvpMarked > 0 && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-gray-400 mb-1">
+              <span>{rsvpMarked} מתוך {total} סומנו</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
+              <div className="bg-green-500 h-full transition-all" style={{ width: `${total ? (rsvpYes / total) * 100 : 0}%` }} />
+              <div className="bg-orange-400 h-full transition-all" style={{ width: `${total ? (rsvpMaybe / total) * 100 : 0}%` }} />
+              <div className="bg-red-400 h-full transition-all" style={{ width: `${total ? (rsvpNo / total) * 100 : 0}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status breakdown box */}

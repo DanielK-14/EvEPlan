@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Guest, GuestRelation } from '../../types';
+import { formatPhone, isPhoneComplete } from '../../utils/phone';
 
 interface Props {
   guest: Guest;
@@ -25,10 +26,12 @@ export default function GuestEditModal({ guest, existingLabels, allGuests, onClo
   });
   const [saving, setSaving] = useState(false);
   const [duplicateError, setDuplicateError] = useState(false);
+  const [phoneError, setPhoneError] = useState<'duplicate' | 'format' | null>(null);
 
   function set<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === 'firstName' || key === 'lastName') setDuplicateError(false);
+    if (key === 'phoneNumber') setPhoneError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -42,6 +45,11 @@ export default function GuestEditModal({ guest, existingLabels, allGuests, onClo
         g.lastName.trim().toLowerCase() === last
     );
     if (isDuplicate) { setDuplicateError(true); return; }
+    if (!isPhoneComplete(form.phoneNumber)) { setPhoneError('format'); return; }
+    const phoneDigits = form.phoneNumber.replace(/\D/g, '');
+    if (phoneDigits && allGuests.some(g => g.id !== guest.id && g.phoneNumber.replace(/\D/g, '') === phoneDigits)) {
+      setPhoneError('duplicate'); return;
+    }
     setSaving(true);
     await onSave({ ...form, kidsCount: form.hasKids ? form.kidsCount : 0 });
     setSaving(false);
@@ -107,10 +115,17 @@ export default function GuestEditModal({ guest, existingLabels, allGuests, onClo
             <input
               type="tel"
               value={form.phoneNumber}
-              onChange={(e) => set('phoneNumber', e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              onChange={(e) => set('phoneNumber', formatPhone(e.target.value))}
+              placeholder="050-1234-567"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${phoneError ? 'border-red-400 focus:ring-red-400' : 'focus:ring-indigo-400'}`}
               dir="ltr"
             />
+            {phoneError === 'duplicate' && (
+              <p className="text-xs text-red-500 mt-1">מספר טלפון זה כבר קיים ברשימה</p>
+            )}
+            {phoneError === 'format' && (
+              <p className="text-xs text-red-500 mt-1">פורמט לא תקין — נדרש XXX-XXXX-XXX</p>
+            )}
           </div>
 
           <div>

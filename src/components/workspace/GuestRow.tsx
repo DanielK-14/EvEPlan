@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2, ChevronDown, Link2, Pencil } from 'lucide-react';
 import type { Guest, GuestStatus, GuestRelation } from '../../types';
 import type { GroupColor } from '../../utils/groupColors';
+import { formatPhone } from '../../utils/phone';
 
 interface Props {
   guest: Guest;
@@ -94,7 +95,7 @@ export default function GuestRow({ guest, editable, onUpdate, onDelete, onEdit, 
           <span className="text-xs text-gray-600">{guest.relatedTo}</span>
         )}
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600" dir="ltr">{guest.phoneNumber}</td>
+      <td className="px-4 py-3 text-sm text-gray-600" dir="ltr">{formatPhone(guest.phoneNumber)}</td>
       <td className="px-4 py-3 text-xs text-gray-500">{guest.tableLabel}</td>
       <td className="px-4 py-3">
         <div className="flex gap-1 flex-wrap">
@@ -106,6 +107,27 @@ export default function GuestRow({ guest, editable, onUpdate, onDelete, onEdit, 
               👶 {guest.kidsCount}
             </span>
           )}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex gap-0.5">
+          {(['yes', 'maybe', 'no'] as const).map((v) => {
+            const cfg = {
+              yes:   { active: 'bg-green-500',  inactive: 'bg-green-100',  title: 'יגיע' },
+              maybe: { active: 'bg-orange-400', inactive: 'bg-orange-100', title: 'אולי' },
+              no:    { active: 'bg-red-500',    inactive: 'bg-red-100',    title: 'לא יגיע' },
+            }[v];
+            const isActive = guest.rsvpLikelihood === v;
+            return (
+              <button
+                key={v}
+                onClick={() => editable && onUpdate({ rsvpLikelihood: isActive ? undefined : v })}
+                disabled={!editable}
+                title={cfg.title}
+                className={`h-3 w-5 rounded-sm transition-colors ${isActive ? cfg.active : cfg.inactive} ${editable ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
+              />
+            );
+          })}
         </div>
       </td>
       <td className="px-4 py-3">
