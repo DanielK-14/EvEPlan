@@ -51,7 +51,15 @@ export default function GuestList({ guests, editable, onAdd, onUpdate, onDelete 
     }
     if (!groupId) groupId = crypto.randomUUID();
     await onAdd({ ...guest, relationGroupId: groupId });
+    const allToUpdate = new Set(linkedGuestIds);
     for (const id of linkedGuestIds) {
+      const g = guests.find(gg => gg.id === id);
+      if (g?.relationGroupId) {
+        guests.filter(gg => gg.relationGroupId === g.relationGroupId)
+              .forEach(gg => allToUpdate.add(gg.id));
+      }
+    }
+    for (const id of allToUpdate) {
       await onUpdate(id, { relationGroupId: groupId });
     }
   }
@@ -91,11 +99,11 @@ export default function GuestList({ guests, editable, onAdd, onUpdate, onDelete 
       const g = guests.find(gg => gg.id === id);
       if (!g) continue;
       if (g.relationGroupId && g.relationGroupId !== groupId) {
-        const remainingInOldGroup = guests.filter(
+        const oldGroupSiblings = guests.filter(
           gg => gg.relationGroupId === g.relationGroupId && !futureGroupIds.has(gg.id)
         );
-        if (remainingInOldGroup.length === 1) {
-          await onUpdate(remainingInOldGroup[0].id, { relationGroupId: undefined });
+        for (const sibling of oldGroupSiblings) {
+          await onUpdate(sibling.id, { relationGroupId: groupId });
         }
       }
       await onUpdate(id, { relationGroupId: groupId });
