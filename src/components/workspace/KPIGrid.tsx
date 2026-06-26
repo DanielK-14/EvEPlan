@@ -26,6 +26,16 @@ export default function KPIGrid({ guests, config }: Props) {
 
   const arrivedPct = total ? Math.round((arrived / total) * 100) : 0;
 
+  // Forecast-based financials (yes + maybe guests only)
+  const forecastGuests   = guests.filter((g) => g.rsvpLikelihood === 'yes' || g.rsvpLikelihood === 'maybe');
+  const forecastAdults   = forecastGuests.length;
+  const forecastChildren = forecastGuests.reduce((s, g) => s + (g.hasKids ? g.kidsCount : 0), 0);
+  const forecastPeople   = forecastAdults + forecastChildren;
+  const forecastExpenses = forecastAdults * (config.dishPrice ?? 0) + attractionTotal;
+  const forecastNetPL    = kpis.totalRevenue - forecastExpenses;
+  const isForecastProfit = forecastNetPL >= 0;
+  const expectedGiftPerGuest = forecastAdults > 0 ? Math.round(forecastExpenses / forecastAdults) : 0;
+
   const isProfit = kpis.netProfitLoss >= 0;
 
   return (
@@ -124,42 +134,81 @@ export default function KPIGrid({ guests, config }: Props) {
 
       {/* Financial box */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <p className="text-xs text-gray-500 mb-4">סיכום פיננסי</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-          <div>
-            <p className="text-xs text-gray-400 mb-1">💸 סך הוצאות</p>
-            <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.totalExpenses)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 mb-1">🎁 סך הכנסות</p>
-            <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.totalRevenue)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 mb-1">🎯 מומלץ לאורח</p>
-            <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.targetPerHead)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 mb-1">
-              {isProfit ? '✅ רווח נקי' : '❌ הפסד נקי'}
-            </p>
-            <p className={`text-xl font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
-              {isProfit ? '+' : '-'}{formatShekel(Math.abs(kpis.netProfitLoss))}
-            </p>
-          </div>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          {kpis.totalExpenses > 0 && (
-            <div
-              className={`h-full rounded-full transition-all ${isProfit ? 'bg-green-500' : 'bg-red-400'}`}
-              style={{ width: `${Math.min((kpis.totalRevenue / kpis.totalExpenses) * 100, 100)}%` }}
-            />
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-gray-500">סיכום פיננסי</p>
+          {forecastAdults > 0 ? (
+            <span className="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">
+              לפי תחזית — {forecastPeople} אנשים צפויים
+            </span>
+          ) : (
+            <span className="text-xs bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full">
+              סמן אורחים בתחזית לחישוב מדויק
+            </span>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-1">
-          {kpis.totalExpenses > 0
-            ? `כוסו ${Math.min(Math.round((kpis.totalRevenue / kpis.totalExpenses) * 100), 100)}% מההוצאות`
-            : 'לא הוגדרו הוצאות עדיין'}
-        </p>
+        {forecastAdults > 0 ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div>
+                <p className="text-xs text-gray-400 mb-1">💸 הוצאות צפויות</p>
+                <p className="text-xl font-bold text-gray-800">{formatShekel(forecastExpenses)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">🎁 סך הכנסות</p>
+                <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.totalRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">🎯 מתנה ממוצעת מומלצת</p>
+                <p className="text-xl font-bold text-indigo-600">{formatShekel(expectedGiftPerGuest)}</p>
+                <p className="text-xs text-gray-400">לכל אורח</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">
+                  {isForecastProfit ? '✅ רווח צפוי' : '❌ הפסד צפוי'}
+                </p>
+                <p className={`text-xl font-bold ${isForecastProfit ? 'text-green-600' : 'text-red-600'}`}>
+                  {isForecastProfit ? '+' : '-'}{formatShekel(Math.abs(forecastNetPL))}
+                </p>
+              </div>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              {forecastExpenses > 0 && (
+                <div
+                  className={`h-full rounded-full transition-all ${isForecastProfit ? 'bg-green-500' : 'bg-red-400'}`}
+                  style={{ width: `${Math.min((kpis.totalRevenue / forecastExpenses) * 100, 100)}%` }}
+                />
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              {forecastExpenses > 0
+                ? `כוסו ${Math.min(Math.round((kpis.totalRevenue / forecastExpenses) * 100), 100)}% מההוצאות הצפויות`
+                : 'לא הוגדרו הוצאות עדיין'}
+            </p>
+          </>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-gray-400 mb-1">💸 סך הוצאות</p>
+              <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.totalExpenses)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 mb-1">🎁 סך הכנסות</p>
+              <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.totalRevenue)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 mb-1">🎯 מומלץ לאורח</p>
+              <p className="text-xl font-bold text-gray-800">{formatShekel(kpis.targetPerHead)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 mb-1">
+                {isProfit ? '✅ רווח נקי' : '❌ הפסד נקי'}
+              </p>
+              <p className={`text-xl font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+                {isProfit ? '+' : '-'}{formatShekel(Math.abs(kpis.netProfitLoss))}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
