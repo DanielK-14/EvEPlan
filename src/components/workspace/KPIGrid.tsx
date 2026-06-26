@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { computeKPIs } from '../../utils/calculations';
 import { formatShekel } from '../../utils/formatters';
 import type { Guest, FinanceConfig } from '../../types';
@@ -8,6 +9,9 @@ interface Props {
 }
 
 export default function KPIGrid({ guests, config }: Props) {
+  const [includeYes, setIncludeYes] = useState(true);
+  const [includeMaybe, setIncludeMaybe] = useState(true);
+
   const attractionTotal = config.attractions.reduce((s, a) => s + (a.price ?? 0), 0);
   const kpis = computeKPIs(guests, config.dishPrice, attractionTotal);
 
@@ -26,8 +30,10 @@ export default function KPIGrid({ guests, config }: Props) {
 
   const arrivedPct = total ? Math.round((arrived / total) * 100) : 0;
 
-  // Forecast-based financials (yes + maybe guests only)
-  const forecastGuests   = guests.filter((g) => g.rsvpLikelihood === 'yes' || g.rsvpLikelihood === 'maybe');
+  // Forecast-based financials (controlled by checkboxes)
+  const forecastGuests   = guests.filter((g) =>
+    (includeYes && g.rsvpLikelihood === 'yes') || (includeMaybe && g.rsvpLikelihood === 'maybe')
+  );
   const forecastAdults   = forecastGuests.length;
   const forecastChildren = forecastGuests.reduce((s, g) => s + (g.hasKids ? g.kidsCount : 0), 0);
   const forecastPeople   = forecastAdults + forecastChildren;
@@ -136,15 +142,32 @@ export default function KPIGrid({ guests, config }: Props) {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs text-gray-500">סיכום פיננסי</p>
-          {forecastAdults > 0 ? (
-            <span className="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">
-              לפי תחזית — {forecastPeople} אנשים צפויים
-            </span>
-          ) : (
-            <span className="text-xs bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full">
-              סמן אורחים בתחזית לחישוב מדויק
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">כלול בחישוב:</span>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeYes}
+                onChange={(e) => setIncludeYes(e.target.checked)}
+                className="w-3.5 h-3.5 accent-green-500"
+              />
+              <span className="text-xs text-green-600 font-medium">יגיעו</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeMaybe}
+                onChange={(e) => setIncludeMaybe(e.target.checked)}
+                className="w-3.5 h-3.5 accent-orange-400"
+              />
+              <span className="text-xs text-orange-500 font-medium">אולי</span>
+            </label>
+            {forecastAdults > 0 && (
+              <span className="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">
+                {forecastPeople} אנשים
+              </span>
+            )}
+          </div>
         </div>
         {forecastAdults > 0 ? (
           <>
