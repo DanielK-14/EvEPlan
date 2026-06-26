@@ -71,11 +71,28 @@ export default function LinkGuestsModal({ guest, allGuests, groupColorMap, onClo
           </button>
         </div>
 
-        <p className="px-5 pt-3 pb-1 text-xs text-gray-400">
-          סמן את האורחים הקשורים לאורח זה. כל קבוצה תקבל צבע ייחודי.
-        </p>
+        <div className="px-5 pt-3 pb-2 flex items-center justify-between gap-3">
+          <p className="text-xs text-gray-400">סמן את האורחים הקשורים לאורח זה.</p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setSelected(new Set(others.map(g => g.id)))}
+              className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              בחר הכל
+            </button>
+            {guest.relationGroupId && (
+              <button
+                onClick={async () => { setSaving(true); await onSave([]); setSaving(false); onClose(); }}
+                disabled={saving}
+                className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+              >
+                הסר מכל הקשרים
+              </button>
+            )}
+          </div>
+        </div>
 
-        <div className="px-4 pt-2 pb-1">
+        <div className="px-4 pb-1">
           <div className="relative">
             <Search size={13} className="absolute right-3 top-2.5 text-gray-400" />
             <input
